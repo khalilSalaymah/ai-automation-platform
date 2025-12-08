@@ -51,6 +51,14 @@ class Settings(BaseSettings):
     google_redirect_uri: str = "http://localhost:8000/api/auth/google/callback"
     frontend_url: str = "http://localhost:5173"
 
+    # Stripe
+    stripe_secret_key: str = ""
+    stripe_publishable_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_basic: str = ""  # Stripe Price ID for basic plan
+    stripe_price_pro: str = ""  # Stripe Price ID for pro plan
+    stripe_price_enterprise: str = ""  # Stripe Price ID for enterprise plan
+
     class Config:
         env_file = ".env"
         case_sensitive = False

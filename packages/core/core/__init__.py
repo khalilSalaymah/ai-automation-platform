@@ -19,6 +19,21 @@ from .models import User, UserBase, UserCreate, UserUpdate, UserResponse, Organi
 from .database import get_session, init_db, engine
 from .dependencies import get_current_user, get_current_active_user, require_role, RequireAdmin, RequireStaff, RequireClient, get_user_org_id
 from .auth_router import router as auth_router
+from .billing_router import router as billing_router
+from .billing_service import BillingService
+from .billing_models import (
+    Subscription,
+    Quota,
+    Usage,
+    Invoice,
+    SubscriptionStatus,
+    UsageType,
+    SubscriptionResponse,
+    QuotaResponse,
+    UsageResponse,
+    UsageSummary,
+    InvoiceResponse,
+)
 
 __all__ = [
     "LLM",
@@ -64,5 +79,18 @@ __all__ = [
     "RequireClient",
     "get_user_org_id",
     "auth_router",
+    "billing_router",
+    "BillingService",
+    "Subscription",
+    "Quota",
+    "Usage",
+    "Invoice",
+    "SubscriptionStatus",
+    "UsageType",
+    "SubscriptionResponse",
+    "QuotaResponse",
+    "UsageResponse",
+    "UsageSummary",
+    "InvoiceResponse",
 ]
 

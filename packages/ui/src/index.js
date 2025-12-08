@@ -6,4 +6,6 @@ export { Register } from './components/Register';
 export { ForgotPassword } from './components/ForgotPassword';
 export { AuthGuard, AdminGuard } from './components/AuthGuard';
 export { AuthProvider, useAuth } from './hooks/useAuth';
+export { default as BillingDashboard } from './components/BillingDashboard';
+export { default as BillingAdmin } from './components/BillingAdmin';
 
