@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  pgvector:
+    image: ankane/pgvector:latest
+    environment:
+      POSTGRES_DB: ai_agents
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+
+  email-agent:
+    build:
+      context: ../apps/email-agent
+      dockerfile: ../../infra/docker/python.Dockerfile
+    env_file:
+      - ../apps/email-agent/.env
+    depends_on:
+      - redis
+      - pgvector
+    ports:
+      - "8081:8000"
+    volumes:
+      - ../apps/email-agent:/app
+
+  rag-chat:
+    build:
+      context: ../apps/rag-chat
+      dockerfile: ../../infra/docker/python.Dockerfile
+    env_file:
+      - ../apps/rag-chat/.env
+    depends_on:
+      - redis
+      - pgvector
+    ports:
+      - "8082:8000"
+    volumes:
+      - ../apps/rag-chat:/app
+
+  support-bot:
+    build:
+      context: ../apps/support-bot
+      dockerfile: ../../infra/docker/python.Dockerfile
+    env_file:
+      - ../apps/support-bot/.env
+    depends_on:
+      - redis
+      - pgvector
+    ports:
+      - "8083:8000"
+    volumes:
+      - ../apps/support-bot:/app
+
+  scraper-agent:
+    build:
+      context: ../apps/scraper-agent
+      dockerfile: ../../infra/docker/python.Dockerfile
+    env_file:
+      - ../apps/scraper-agent/.env
+    depends_on:
+      - redis
+      - pgvector
+    ports:
+      - "8084:8000"
+    volumes:
+      - ../apps/scraper-agent:/app
+
+  aiops-bot:
+    build:
+      context: ../apps/aiops-bot
+      dockerfile: ../../infra/docker/python.Dockerfile
+    env_file:
+      - ../apps/aiops-bot/.env
+    depends_on:
+      - redis
+      - pgvector
+    ports:
+      - "8085:8000"
+    volumes:
+      - ../apps/aiops-bot:/app
+
+  ui:
+    build:
+      context: ../packages/ui
+      dockerfile: ../../infra/frontend/frontend.Dockerfile
+    environment:
+      - NODE_ENV=production
+    ports:
+      - "3000:80"
+    depends_on:
+      - rag-chat
+
+volumes:
+  redis_data:
+  pgvector_data:
+

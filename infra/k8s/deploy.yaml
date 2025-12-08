@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: email-agent
+  labels:
+    app: email-agent
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: email-agent
+  template:
+    metadata:
+      labels:
+        app: email-agent
+    spec:
+      containers:
+        - name: email-agent
+          image: ghcr.io/your-org/email-agent:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: redis-url
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: database-url
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-chat
+  labels:
+    app: rag-chat
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rag-chat
+  template:
+    metadata:
+      labels:
+        app: rag-chat
+    spec:
+      containers:
+        - name: rag-chat
+          image: ghcr.io/your-org/rag-chat:latest
+          ports:
+            - containerPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: support-bot
+  labels:
+    app: support-bot
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: support-bot
+  template:
+    metadata:
+      labels:
+        app: support-bot
+    spec:
+      containers:
+        - name: support-bot
+          image: ghcr.io/your-org/support-bot:latest
+          ports:
+            - containerPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scraper-agent
+  labels:
+    app: scraper-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scraper-agent
+  template:
+    metadata:
+      labels:
+        app: scraper-agent
+    spec:
+      containers:
+        - name: scraper-agent
+          image: ghcr.io/your-org/scraper-agent:latest
+          ports:
+            - containerPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aiops-bot
+  labels:
+    app: aiops-bot
+spec:
+  replicas: 2
+  selector:
+    app: aiops-bot
+  template:
+    metadata:
+      labels:
+        app: aiops-bot
+    spec:
+      containers:
+        - name: aiops-bot
+          image: ghcr.io/your-org/aiops-bot:latest
+          ports:
+            - containerPort: 8000
+

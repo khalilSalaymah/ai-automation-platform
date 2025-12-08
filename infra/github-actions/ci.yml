@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          pip install tox black ruff
+      - name: Run lint
+        run: |
+          black --check .
+          ruff check .
+
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          pip install tox mypy
+      - name: Run Mypy
+        run: |
+          mypy packages/core --ignore-missing-imports
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-asyncio
+          cd packages/core && pip install -e .
+      - name: Run tests
+        run: |
+          pytest packages/core/tests
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: [lint, mypy, test]
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build & push email-agent
+        run: |
+          docker build -t ghcr.io/${{ github.repository_owner }}/email-agent:latest -f infra/docker/python.Dockerfile apps/email-agent
+          docker push ghcr.io/${{ github.repository_owner }}/email-agent:latest
+      - name: Build & push rag-chat
+        run: |
+          docker build -t ghcr.io/${{ github.repository_owner }}/rag-chat:latest -f infra/docker/python.Dockerfile apps/rag-chat
+          docker push ghcr.io/${{ github.repository_owner }}/rag-chat:latest
+      - name: Build & push support-bot
+        run: |
+          docker build -t ghcr.io/${{ github.repository_owner }}/support-bot:latest -f infra/docker/python.Dockerfile apps/support-bot
+          docker push ghcr.io/${{ github.repository_owner }}/support-bot:latest
+      - name: Build & push scraper-agent
+        run: |
+          docker build -t ghcr.io/${{ github.repository_owner }}/scraper-agent:latest -f infra/docker/python.Dockerfile apps/scraper-agent
+          docker push ghcr.io/${{ github.repository_owner }}/scraper-agent:latest
+      - name: Build & push aiops-bot
+        run: |
+          docker build -t ghcr.io/${{ github.repository_owner }}/aiops-bot:latest -f infra/docker/python.Dockerfile apps/aiops-bot
+          docker push ghcr.io/${{ github.repository_owner }}/aiops-bot:latest
+      - name: Build & push UI
+        run: |
+          docker build -t ghcr.io/${{ github.repository_owner }}/ui:latest -f infra/frontend/frontend.Dockerfile packages/ui
+          docker push ghcr.io/${{ github.repository_owner }}/ui:latest
+

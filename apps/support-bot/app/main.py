@@ -1,0 +1,30 @@
+"""FastAPI application entry point."""
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+from core.logger import logger
+
+load_dotenv()
+
+from .routers.support_router import router as support_router
+from .config import settings
+
+app = FastAPI(title="Support Bot API", description="AI support bot", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(support_router, prefix="/api/support", tags=["support"])
+
+
+@logger.catch
+@app.get("/health")
+async def health():
+    return {"status": "ok", "service": "support-bot"}
+
