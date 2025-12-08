@@ -44,6 +44,13 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
 
+    # Authentication
+    secret_key: str = "your-secret-key-change-in-production"
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = "http://localhost:8000/api/auth/google/callback"
+    frontend_url: str = "http://localhost:5173"
+
     class Config:
         env_file = ".env"
         case_sensitive = False

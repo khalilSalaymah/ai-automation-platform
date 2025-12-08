@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from core.logger import logger
+from core import auth_router, init_db
 
 load_dotenv()
 
@@ -20,7 +21,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include auth router
+app.include_router(auth_router, prefix="/api")
+
+# Include app routers
 app.include_router(support_router, prefix="/api/support", tags=["support"])
+
+
+@app.on_event("startup")
+async def startup():
+    """Initialize database on startup."""
+    init_db()
+    logger.info("Support Bot API starting up")
 
 
 @logger.catch

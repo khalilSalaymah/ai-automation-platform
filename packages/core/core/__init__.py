@@ -14,6 +14,11 @@ from .errors import (
     MemoryError,
     ToolError,
 )
+from .auth import Role, Token, TokenData, verify_password, get_password_hash, create_access_token, create_refresh_token, decode_token
+from .models import User, UserBase, UserCreate, UserUpdate, UserResponse, Organization
+from .database import get_session, init_db, engine
+from .dependencies import get_current_user, get_current_active_user, require_role, RequireAdmin, RequireStaff, RequireClient, get_user_org_id
+from .auth_router import router as auth_router
 
 __all__ = [
     "LLM",
@@ -33,5 +38,31 @@ __all__ = [
     "LLMError",
     "MemoryError",
     "ToolError",
+    # Auth exports
+    "Role",
+    "Token",
+    "TokenData",
+    "verify_password",
+    "get_password_hash",
+    "create_access_token",
+    "create_refresh_token",
+    "decode_token",
+    "User",
+    "UserBase",
+    "UserCreate",
+    "UserUpdate",
+    "UserResponse",
+    "Organization",
+    "get_session",
+    "init_db",
+    "engine",
+    "get_current_user",
+    "get_current_active_user",
+    "require_role",
+    "RequireAdmin",
+    "RequireStaff",
+    "RequireClient",
+    "get_user_org_id",
+    "auth_router",
 ]
 

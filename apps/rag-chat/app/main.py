@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from core.logger import logger
+from core import auth_router, init_db
 
 load_dotenv()
 
@@ -24,6 +25,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include auth router
+app.include_router(auth_router, prefix="/api")
+
+# Include app routers
 app.include_router(rag_router, prefix="/api", tags=["rag"])
 
 
@@ -37,6 +42,7 @@ async def health():
 @app.on_event("startup")
 async def startup():
     """Startup event handler."""
+    init_db()
     logger.info("RAG Chat API starting up")
 
 
