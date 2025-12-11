@@ -43,6 +43,10 @@ class Settings(BaseSettings):
 
     # Logging
     log_level: str = "INFO"
+    
+    # Observability
+    slack_webhook_url: str = ""  # Slack webhook URL for error alerts
+    enable_slack_alerts: bool = False  # Enable/disable Slack alerts
 
     # Authentication
     secret_key: str = "your-secret-key-change-in-production"

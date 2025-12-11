@@ -1,16 +1,25 @@
-"""Request logging middleware."""
+"""Request logging middleware with trace_id support."""
 
 import time
 from datetime import datetime
-from fastapi import Request
-from core.logger import logger
+from fastapi import Request, Response
+from core.logger import (
+    logger,
+    generate_trace_id,
+    set_trace_id,
+    get_trace_id,
+    generate_span_id,
+    set_span_id,
+    log_span,
+)
+from core.observability import log_error_with_alert
 from ..middleware.auth import verify_token
 from ..models import RequestLog
 
 
 async def logging_middleware(request: Request, call_next):
     """
-    Log every request.
+    Log every request with trace_id and span tracking.
     
     Args:
         request: FastAPI request object
@@ -20,6 +29,14 @@ async def logging_middleware(request: Request, call_next):
         Response
     """
     start_time = time.time()
+    
+    # Generate or extract trace_id from headers
+    trace_id = request.headers.get("X-Trace-ID") or generate_trace_id()
+    set_trace_id(trace_id)
+    
+    # Generate span_id for this request
+    span_id = generate_span_id()
+    set_span_id(span_id)
     
     # Get user info
     token_data = await verify_token(request)
@@ -35,33 +52,72 @@ async def logging_middleware(request: Request, call_next):
     error = None
     status_code = 200
     
+    # Log request start
+    logger.info(
+        "Request started",
+        method=request.method,
+        path=str(request.url.path),
+        user_id=user_id,
+        agent=agent,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
+    
     try:
         response = await call_next(request)
         status_code = response.status_code
+        
+        # Add trace_id to response headers
+        # Note: FastAPI responses may be different types, so we try to add the header
+        try:
+            if hasattr(response, "headers"):
+                response.headers["X-Trace-ID"] = trace_id
+        except Exception:
+            # If we can't add headers, that's okay
+            pass
+            
         return response
     except Exception as e:
         error = str(e)
         status_code = 500
+        
+        # Log error with alert
+        log_error_with_alert(
+            message=f"Request failed: {request.method} {request.url.path}",
+            error=e,
+            metadata={
+                "method": request.method,
+                "path": str(request.url.path),
+                "user_id": user_id,
+                "agent": agent,
+                "status_code": status_code,
+            },
+        )
         raise
     finally:
         # Calculate response time
-        response_time_ms = (time.time() - start_time) * 1000
+        end_time = time.time()
+        response_time_ms = (end_time - start_time) * 1000
         
-        # Log request
-        log_entry = RequestLog(
-            user_id=user_id,
-            method=request.method,
-            path=str(request.url.path),
-            agent=agent or "unknown",
-            status_code=status_code,
-            response_time_ms=response_time_ms,
-            timestamp=datetime.utcnow(),
-            ip_address=ip_address,
-            user_agent=user_agent,
+        # Log request span
+        log_span(
+            operation="http_request",
+            service="gateway",
+            metadata={
+                "method": request.method,
+                "path": str(request.url.path),
+                "user_id": user_id,
+                "agent": agent or "unknown",
+                "status_code": status_code,
+                "response_time_ms": response_time_ms,
+                "ip_address": ip_address,
+            },
+            start_time=start_time,
+            end_time=end_time,
             error=error,
         )
         
-        # Log to logger
+        # Log request completion
         log_level = "error" if error else ("warning" if status_code >= 400 else "info")
         log_message = (
             f"Request: {request.method} {request.url.path} | "

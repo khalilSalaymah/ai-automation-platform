@@ -48,6 +48,9 @@ from .task_queue import TaskQueue
 from .event_bus import EventBus
 from .scheduler_router import router as scheduler_router
 from .worker import create_worker
+from .log_models import LogEntry, LogEntryResponse, LogQueryParams
+from .log_router import router as log_router
+from .observability import send_slack_alert, log_error_with_alert
 
 __all__ = [
     "LLM",
@@ -119,5 +122,13 @@ __all__ = [
     "EventBus",
     "scheduler_router",
     "create_worker",
+    # Log exports
+    "LogEntry",
+    "LogEntryResponse",
+    "LogQueryParams",
+    "log_router",
+    # Observability exports
+    "send_slack_alert",
+    "log_error_with_alert",
 ]
 

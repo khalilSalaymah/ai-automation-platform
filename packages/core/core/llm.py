@@ -1,11 +1,20 @@
 """OpenAI LLM wrapper with streaming and function calling support."""
 
+import time
 from typing import Optional, List, Dict, Any, Iterator, AsyncIterator
 import openai
 from openai import OpenAI, AsyncOpenAI
 from loguru import logger
 
 from .errors import LLMError
+from .logger import (
+    get_trace_id,
+    generate_span_id,
+    set_span_id,
+    get_span_id,
+    log_span,
+)
+from .observability import log_error_with_alert
 
 
 class LLM:
@@ -44,7 +53,7 @@ class LLM:
         **kwargs
     ):
         """
-        Chat completion.
+        Chat completion with span tracking.
 
         Args:
             messages: List of message dicts with 'role' and 'content'
@@ -56,6 +65,12 @@ class LLM:
         Returns:
             Chat completion response or stream
         """
+        start_time = time.time()
+        parent_span_id = get_span_id()
+        span_id = generate_span_id()
+        set_span_id(span_id, parent_span_id)
+        trace_id = get_trace_id()
+        
         try:
             params = {
                 "model": self.model,
@@ -74,13 +89,63 @@ class LLM:
 
             params.update(kwargs)
 
+            # Log LLM call start
+            logger.info(
+                "LLM call started",
+                model=self.model,
+                has_functions=bool(functions),
+                stream=stream,
+            )
+
             if stream:
-                return self.client.chat.completions.create(**params)
+                result = self.client.chat.completions.create(**params)
             else:
-                return self.client.chat.completions.create(**params)
+                result = self.client.chat.completions.create(**params)
+            
+            end_time = time.time()
+            
+            # Log span
+            log_span(
+                operation="llm_call",
+                service="openai",
+                metadata={
+                    "model": self.model,
+                    "has_functions": bool(functions),
+                    "stream": stream,
+                    "messages_count": len(messages),
+                },
+                start_time=start_time,
+                end_time=end_time,
+            )
+            
+            return result
 
         except Exception as e:
-            logger.error(f"LLM error: {e}")
+            end_time = time.time()
+            
+            # Log error span
+            log_span(
+                operation="llm_call",
+                service="openai",
+                metadata={
+                    "model": self.model,
+                    "has_functions": bool(functions),
+                    "stream": stream,
+                },
+                start_time=start_time,
+                end_time=end_time,
+                error=str(e),
+            )
+            
+            log_error_with_alert(
+                message=f"LLM call failed: {self.model}",
+                error=e,
+                metadata={
+                    "model": self.model,
+                    "has_functions": bool(functions),
+                },
+            )
+            
             raise LLMError(f"Failed to generate completion: {e}") from e
 
     async def achat(
@@ -92,7 +157,7 @@ class LLM:
         **kwargs
     ):
         """
-        Async chat completion.
+        Async chat completion with span tracking.
 
         Args:
             messages: List of message dicts with 'role' and 'content'
@@ -104,6 +169,12 @@ class LLM:
         Returns:
             Async chat completion response or stream
         """
+        start_time = time.time()
+        parent_span_id = get_span_id()
+        span_id = generate_span_id()
+        set_span_id(span_id, parent_span_id)
+        trace_id = get_trace_id()
+        
         try:
             params = {
                 "model": self.model,
@@ -122,13 +193,63 @@ class LLM:
 
             params.update(kwargs)
 
+            # Log LLM call start
+            logger.info(
+                "LLM async call started",
+                model=self.model,
+                has_functions=bool(functions),
+                stream=stream,
+            )
+
             if stream:
-                return await self.async_client.chat.completions.create(**params)
+                result = await self.async_client.chat.completions.create(**params)
             else:
-                return await self.async_client.chat.completions.create(**params)
+                result = await self.async_client.chat.completions.create(**params)
+            
+            end_time = time.time()
+            
+            # Log span
+            log_span(
+                operation="llm_call",
+                service="openai",
+                metadata={
+                    "model": self.model,
+                    "has_functions": bool(functions),
+                    "stream": stream,
+                    "messages_count": len(messages),
+                },
+                start_time=start_time,
+                end_time=end_time,
+            )
+            
+            return result
 
         except Exception as e:
-            logger.error(f"LLM async error: {e}")
+            end_time = time.time()
+            
+            # Log error span
+            log_span(
+                operation="llm_call",
+                service="openai",
+                metadata={
+                    "model": self.model,
+                    "has_functions": bool(functions),
+                    "stream": stream,
+                },
+                start_time=start_time,
+                end_time=end_time,
+                error=str(e),
+            )
+            
+            log_error_with_alert(
+                message=f"LLM async call failed: {self.model}",
+                error=e,
+                metadata={
+                    "model": self.model,
+                    "has_functions": bool(functions),
+                },
+            )
+            
             raise LLMError(f"Failed to generate async completion: {e}") from e
 
     def stream_chat(

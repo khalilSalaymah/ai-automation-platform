@@ -1,10 +1,19 @@
 """Tool registry and standardized tool interface."""
 
+import time
 from typing import Callable, Dict, Any, List, Optional
 from abc import ABC, abstractmethod
 from loguru import logger
 
 from .errors import ToolError
+from .logger import (
+    get_trace_id,
+    generate_span_id,
+    set_span_id,
+    get_span_id,
+    log_span,
+)
+from .observability import log_error_with_alert
 
 
 class Tool(ABC):
@@ -82,11 +91,63 @@ class FunctionTool(Tool):
         self.parameters_schema = parameters_schema or {}
 
     def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute wrapped function."""
+        """Execute wrapped function with span tracking."""
+        start_time = time.time()
+        parent_span_id = get_span_id()
+        span_id = generate_span_id()
+        set_span_id(span_id, parent_span_id)
+        trace_id = get_trace_id()
+        
         try:
+            # Log tool execution start
+            logger.info(
+                "Tool execution started",
+                tool_name=self.name,
+                inputs_keys=list(inputs.keys()),
+            )
+            
             result = self.func(**inputs)
+            
+            end_time = time.time()
+            
+            # Log span
+            log_span(
+                operation="tool_execution",
+                service="tool_registry",
+                metadata={
+                    "tool_name": self.name,
+                    "inputs_keys": list(inputs.keys()),
+                },
+                start_time=start_time,
+                end_time=end_time,
+            )
+            
             return {"result": result, "success": True}
         except Exception as e:
+            end_time = time.time()
+            
+            # Log error span
+            log_span(
+                operation="tool_execution",
+                service="tool_registry",
+                metadata={
+                    "tool_name": self.name,
+                    "inputs_keys": list(inputs.keys()),
+                },
+                start_time=start_time,
+                end_time=end_time,
+                error=str(e),
+            )
+            
+            log_error_with_alert(
+                message=f"Tool execution failed: {self.name}",
+                error=e,
+                metadata={
+                    "tool_name": self.name,
+                    "inputs_keys": list(inputs.keys()),
+                },
+            )
+            
             logger.error(f"Tool {self.name} error: {e}")
             return {"result": None, "success": False, "error": str(e)}
 
@@ -179,7 +240,7 @@ class ToolRegistry:
 
     def execute(self, name: str, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Execute a tool by name.
+        Execute a tool by name with span tracking.
 
         Args:
             name: Tool name
@@ -193,6 +254,11 @@ class ToolRegistry:
         """
         tool = self.get(name)
         if not tool:
-            raise ToolError(f"Tool '{name}' not found")
+            error_msg = f"Tool '{name}' not found"
+            log_error_with_alert(
+                message=error_msg,
+                metadata={"tool_name": name, "available_tools": self.list()},
+            )
+            raise ToolError(error_msg)
         return tool.run(inputs)
 
