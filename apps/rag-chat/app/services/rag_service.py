@@ -22,11 +22,9 @@ class RAGService:
         # For RAG chat, set LLM_PROVIDER=gemini and GEMINI_API_KEY
         self.llm = LLM(model="gemini-1.5-flash")
         self.memory = RedisSessionMemory(url=settings.redis_url)
-        # EmbeddingGenerator still uses OpenAI for embeddings (if provided)
-        if settings.openai_api_key:
-            self.embedding_gen = EmbeddingGenerator(api_key=settings.openai_api_key)
-        else:
-            raise ValueError("openai_api_key is required for EmbeddingGenerator in RAG service")
+        # EmbeddingGenerator uses Gemini embeddings (same API key as LLM)
+        # GEMINI_API_KEY is loaded from environment automatically
+        self.embedding_gen = EmbeddingGenerator()
 
         # Initialize vector store
         if settings.vector_store == "pinecone" and settings.pinecone_api_key:

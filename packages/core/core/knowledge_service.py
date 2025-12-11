@@ -80,9 +80,8 @@ class KnowledgeBaseService:
 
     def __init__(self):
         """Initialize knowledge base service."""
-        self.embedding_generator = EmbeddingGenerator(
-            api_key=settings.openai_api_key, model="text-embedding-3-small"
-        )
+        # EmbeddingGenerator uses Gemini embeddings (loads GEMINI_API_KEY from env)
+        self.embedding_generator = EmbeddingGenerator()
         self.vector_store = PGVectorStore(
             uri=settings.database_url, table_name="document_embeddings"
         )

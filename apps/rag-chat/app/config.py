@@ -9,8 +9,7 @@ class Settings(BaseSettings):
 
     # LLM provider is detected from LLM_PROVIDER env var (groq or gemini)
     # For RAG chat: set LLM_PROVIDER=gemini and GEMINI_API_KEY
-    # OpenAI API key is still needed for embeddings (EmbeddingGenerator)
-    openai_api_key: Optional[str] = None
+    # GEMINI_API_KEY is used for both LLM and embeddings
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"
