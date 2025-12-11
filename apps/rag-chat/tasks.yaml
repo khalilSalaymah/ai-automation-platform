@@ -1,0 +1,24 @@
+tasks:
+  - name: reindex_documents
+    description: Reindex documents every 6 hours
+    enabled: true
+    type: interval
+    schedule: "6 hours"
+    function: "app.services.rag_service:reindex_documents_task"
+
+  - name: cleanup_old_sessions
+    description: Clean up old chat sessions daily at 3 AM
+    enabled: true
+    type: cron
+    schedule: "0 3 * * *"
+    function: "app.services.rag_service:cleanup_sessions_task"
+    kwargs:
+      days_to_keep: 7
+
+  - name: update_embeddings
+    description: Update document embeddings weekly on Sunday at 2 AM
+    enabled: true
+    type: cron
+    schedule: "0 2 * * 0"
+    function: "app.services.rag_service:update_embeddings_task"
+

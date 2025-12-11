@@ -1,0 +1,24 @@
+tasks:
+  - name: analyze_metrics
+    description: Analyze system metrics every hour
+    enabled: true
+    type: cron
+    schedule: "0 * * * *"
+    function: "app.services.aiops_service:analyze_metrics_task"
+    kwargs:
+      metrics_source: "prometheus"
+
+  - name: generate_report
+    description: Generate daily AIOps report at 9 AM
+    enabled: true
+    type: cron
+    schedule: "0 9 * * *"
+    function: "app.services.aiops_service:generate_report_task"
+
+  - name: check_alerts
+    description: Check and process alerts every 15 minutes
+    enabled: true
+    type: interval
+    schedule: "15 minutes"
+    function: "app.services.aiops_service:check_alerts_task"
+

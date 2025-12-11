@@ -1,0 +1,24 @@
+tasks:
+  - name: process_support_tickets
+    description: Process pending support tickets every 10 minutes
+    enabled: true
+    type: interval
+    schedule: "10 minutes"
+    function: "app.services.support_service:process_tickets_task"
+    kwargs:
+      batch_size: 20
+
+  - name: generate_knowledge_base
+    description: Update knowledge base daily at 4 AM
+    enabled: true
+    type: cron
+    schedule: "0 4 * * *"
+    function: "app.services.support_service:update_knowledge_base_task"
+
+  - name: send_support_summary
+    description: Send daily support summary at 6 PM
+    enabled: true
+    type: cron
+    schedule: "0 18 * * *"
+    function: "app.services.support_service:send_summary_task"
+

@@ -3,8 +3,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from pathlib import Path
 from core.logger import logger
-from core import auth_router, init_db
+from core import auth_router, init_db, scheduler_router, TaskScheduler
 
 load_dotenv()
 
@@ -29,6 +30,9 @@ app.add_middleware(
 # Include auth router
 app.include_router(auth_router, prefix="/api")
 
+# Include scheduler router
+app.include_router(scheduler_router, prefix="/api/scheduler", tags=["scheduler"])
+
 # Include app routers
 app.include_router(email_router, prefix="/api/email", tags=["email"])
 
@@ -44,6 +48,16 @@ async def health():
 async def startup():
     """Startup event handler."""
     init_db()
+    
+    # Initialize scheduler and load tasks
+    scheduler = TaskScheduler()
+    yaml_path = Path(__file__).parent.parent / "tasks.yaml"
+    if yaml_path.exists():
+        tasks = scheduler.load_tasks_from_yaml(str(yaml_path), agent_name="email-agent")
+        for task in tasks:
+            scheduler.register_task(task)
+        logger.info(f"Loaded {len(tasks)} scheduled tasks for email-agent")
+    
     logger.info("Email Agent API starting up")
 
 

@@ -34,6 +34,20 @@ from .billing_models import (
     UsageSummary,
     InvoiceResponse,
 )
+from .scheduler_models import (
+    ScheduledTask,
+    TaskExecution,
+    TaskStatus,
+    ScheduledTaskCreate,
+    ScheduledTaskResponse,
+    TaskExecutionResponse,
+    EventMessage,
+)
+from .scheduler import TaskScheduler
+from .task_queue import TaskQueue
+from .event_bus import EventBus
+from .scheduler_router import router as scheduler_router
+from .worker import create_worker
 
 __all__ = [
     "LLM",
@@ -92,5 +106,18 @@ __all__ = [
     "UsageResponse",
     "UsageSummary",
     "InvoiceResponse",
+    # Scheduler exports
+    "ScheduledTask",
+    "TaskExecution",
+    "TaskStatus",
+    "ScheduledTaskCreate",
+    "ScheduledTaskResponse",
+    "TaskExecutionResponse",
+    "EventMessage",
+    "TaskScheduler",
+    "TaskQueue",
+    "EventBus",
+    "scheduler_router",
+    "create_worker",
 ]
 

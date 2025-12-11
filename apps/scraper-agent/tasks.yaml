@@ -1,0 +1,22 @@
+tasks:
+  - name: run_scheduled_scrapes
+    description: Run scheduled web scrapes every 30 minutes
+    enabled: true
+    type: interval
+    schedule: "30 minutes"
+    function: "app.services.scraper_service:run_scheduled_scrapes_task"
+
+  - name: validate_urls
+    description: Validate and clean up URLs daily at 1 AM
+    enabled: true
+    type: cron
+    schedule: "0 1 * * *"
+    function: "app.services.scraper_service:validate_urls_task"
+
+  - name: generate_scrape_report
+    description: Generate weekly scrape report on Monday at 9 AM
+    enabled: true
+    type: cron
+    schedule: "0 9 * * 1"
+    function: "app.services.scraper_service:generate_report_task"
+

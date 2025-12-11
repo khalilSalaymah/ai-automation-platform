@@ -1,0 +1,26 @@
+tasks:
+  - name: process_pending_emails
+    description: Process pending emails every 5 minutes
+    enabled: true
+    type: interval
+    schedule: "5 minutes"
+    function: "app.services.email_service:process_pending_emails_task"
+    kwargs:
+      batch_size: 10
+
+  - name: cleanup_old_history
+    description: Clean up old email history daily at 2 AM
+    enabled: true
+    type: cron
+    schedule: "0 2 * * *"
+    function: "app.services.email_service:cleanup_history_task"
+    kwargs:
+      days_to_keep: 30
+
+  - name: send_digest
+    description: Send daily email digest at 8 AM
+    enabled: true
+    type: cron
+    schedule: "0 8 * * *"
+    function: "app.services.email_service:send_digest_task"
+

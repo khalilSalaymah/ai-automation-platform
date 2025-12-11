@@ -104,3 +104,75 @@ class EmailService:
         # For now, return empty list
         return []
 
+
+# Scheduled task functions (must be synchronous for RQ)
+def process_pending_emails_task(batch_size: int = 10) -> dict:
+    """
+    Scheduled task to process pending emails.
+    
+    Args:
+        batch_size: Number of emails to process in this batch
+        
+    Returns:
+        Result dictionary
+    """
+    from core.logger import logger
+    from core.event_bus import EventBus
+    
+    logger.info(f"Processing {batch_size} pending emails")
+    # TODO: Implement actual email processing logic
+    # This is a placeholder that shows the pattern
+    
+    # Example: Publish event when done
+    event_bus = EventBus()
+    event_bus.publish(
+        event_type="email.batch_processed",
+        source_agent="email-agent",
+        payload={"batch_size": batch_size, "processed": 0}
+    )
+    
+    return {"status": "success", "processed": 0, "batch_size": batch_size}
+
+
+def cleanup_history_task(days_to_keep: int = 30) -> dict:
+    """
+    Scheduled task to clean up old email history.
+    
+    Args:
+        days_to_keep: Number of days of history to keep
+        
+    Returns:
+        Result dictionary
+    """
+    from core.logger import logger
+    from datetime import datetime, timedelta
+    
+    logger.info(f"Cleaning up email history older than {days_to_keep} days")
+    # TODO: Implement actual cleanup logic
+    cutoff_date = datetime.utcnow() - timedelta(days=days_to_keep)
+    
+    return {"status": "success", "cutoff_date": cutoff_date.isoformat()}
+
+
+def send_digest_task() -> dict:
+    """
+    Scheduled task to send daily email digest.
+    
+    Returns:
+        Result dictionary
+    """
+    from core.logger import logger
+    from core.event_bus import EventBus
+    from datetime import datetime
+    
+    logger.info("Sending daily email digest")
+    # TODO: Implement actual digest sending logic
+    
+    event_bus = EventBus()
+    event_bus.publish(
+        event_type="email.digest_sent",
+        source_agent="email-agent",
+        payload={"date": datetime.utcnow().isoformat()}
+    )
+    
+    return {"status": "success", "digest_sent": True}
