@@ -88,3 +88,4 @@ class Organization(SQLModel, table=True):
         sa_column=Column(DateTime, server_default=func.now(), onupdate=func.now()),
     )
 
+

@@ -78,3 +78,4 @@ async def get_user_org_id(current_user: User = Depends(get_current_active_user))
     """Get current user's organization ID."""
     return current_user.org_id
 
+
