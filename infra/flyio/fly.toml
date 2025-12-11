@@ -1,0 +1,50 @@
+# Fly.io configuration for AI Automation Platform
+# Deploy with: flyctl deploy
+
+app = "ai-automation-platform"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  # These will be set via flyctl secrets
+  # DATABASE_URL = "postgresql://..."
+  # REDIS_URL = "redis://..."
+  # SECRET_KEY = "..."
+  # OPENAI_API_KEY = "..."
+  # FRONTEND_URL = "https://your-app.fly.dev"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/health"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 8080
+  processes = ["app"]
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512

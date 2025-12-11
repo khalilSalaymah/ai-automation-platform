@@ -1,0 +1,31 @@
+# Copy this file to terraform.tfvars and update with your values
+
+project_name = "ai-automation"
+
+# VPC Configuration
+vpc_cidr = "10.0.0.0/16"
+region   = "us-east-1"
+
+# RDS Configuration
+rds_engine_version         = "15.4"
+rds_instance_class         = "db.t3.micro"
+rds_allocated_storage      = 20
+rds_max_allocated_storage  = 100
+database_name              = "ai_agents"
+database_username          = "postgres"
+database_password          = "CHANGE_ME_STRONG_PASSWORD"
+rds_backup_retention_period = 7
+rds_skip_final_snapshot    = false
+rds_performance_insights_enabled = false
+
+# ElastiCache Configuration
+redis_engine_version            = "7.0"
+redis_node_type                 = "cache.t3.micro"
+redis_num_cache_nodes           = 1
+redis_automatic_failover_enabled = false
+redis_multi_az_enabled          = false
+redis_at_rest_encryption_enabled = true
+redis_transit_encryption_enabled = false
+redis_snapshot_retention_limit   = 0
+redis_parameter_group_family     = "redis7"
+redis_maxmemory_policy           = "allkeys-lru"
