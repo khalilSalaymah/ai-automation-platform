@@ -65,6 +65,25 @@ class Settings(BaseSettings):
 
     # Notion
     notion_api_key: str = ""  # Notion API key for importing pages
+    notion_client_id: str = ""
+    notion_client_secret: str = ""
+
+    # Slack
+    slack_client_id: str = ""
+    slack_client_secret: str = ""
+
+    # Microsoft/Outlook
+    microsoft_client_id: str = ""
+    microsoft_client_secret: str = ""
+
+    # Airtable
+    airtable_client_id: str = ""
+    airtable_client_secret: str = ""
+
+    # Shopify
+    shopify_client_id: str = ""
+    shopify_client_secret: str = ""
+    shopify_shop_name: str = ""  # e.g., "my-shop" (without .myshopify.com)
 
     class Config:
         env_file = ".env"
