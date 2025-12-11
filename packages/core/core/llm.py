@@ -1,12 +1,10 @@
-"""OpenAI LLM wrapper with streaming and function calling support."""
+"""Multi-provider LLM wrapper with Groq and Gemini support."""
 
 import time
-from typing import Optional, List, Dict, Any, Iterator, AsyncIterator
-import openai
-from openai import OpenAI, AsyncOpenAI
+from typing import Optional, Dict, Any
 from loguru import logger
 
-from .errors import LLMError
+from .errors import LLMError, ConfigError
 from .logger import (
     get_trace_id,
     generate_span_id,
@@ -15,17 +13,19 @@ from .logger import (
     log_span,
 )
 from .observability import log_error_with_alert
+from .config import get_env
 
 
 class LLM:
     """
-    OpenAI GPT-based wrapper with streaming and function calling.
+    Multi-provider LLM wrapper supporting Groq and Gemini.
+    Provider is detected from LLM_PROVIDER environment variable.
     """
 
     def __init__(
         self,
-        api_key: str,
-        model: str = "gpt-4",
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
     ):
@@ -33,274 +33,233 @@ class LLM:
         Initialize LLM client.
 
         Args:
-            api_key: OpenAI API key
-            model: Model name (default: gpt-4)
+            api_key: Provider API key (optional, will load from env if not provided)
+            model: Model name (optional, will use provider default if not provided)
             temperature: Sampling temperature (default: 0.7)
             max_tokens: Maximum tokens to generate
         """
-        self.client = OpenAI(api_key=api_key)
-        self.async_client = AsyncOpenAI(api_key=api_key)
-        self.model = model
+        # Detect provider from environment
+        self.provider = get_env("LLM_PROVIDER", "groq").lower()
+        
+        if self.provider not in ["groq", "gemini"]:
+            raise ConfigError(
+                f"Unsupported LLM provider: {self.provider}. "
+                "Supported providers: 'groq', 'gemini'"
+            )
+
+        # Load provider-specific configuration
+        if self.provider == "groq":
+            self._init_groq(api_key, model, temperature, max_tokens)
+        elif self.provider == "gemini":
+            self._init_gemini(api_key, model, temperature, max_tokens)
+
+    def _init_groq(
+        self,
+        api_key: Optional[str],
+        model: Optional[str],
+        temperature: float,
+        max_tokens: Optional[int],
+    ):
+        """Initialize Groq client."""
+        try:
+            from groq import Groq
+        except ImportError:
+            raise ConfigError(
+                "Groq SDK not installed. Install with: pip install groq"
+            )
+
+        # Load API key
+        if not api_key:
+            api_key = get_env("GROQ_API_KEY")
+        if not api_key:
+            raise ConfigError("GROQ_API_KEY not found in environment variables")
+
+        self.client = Groq(api_key=api_key)
+        self.model = model or "llama3-8b-8192"
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+
+    def _init_gemini(
+        self,
+        api_key: Optional[str],
+        model: Optional[str],
+        temperature: float,
+        max_tokens: Optional[int],
+    ):
+        """Initialize Gemini client."""
+        try:
+            import google.generativeai as genai
+        except ImportError:
+            raise ConfigError(
+                "Google Generative AI SDK not installed. "
+                "Install with: pip install google-generativeai"
+            )
+
+        # Load API key
+        if not api_key:
+            api_key = get_env("GEMINI_API_KEY")
+        if not api_key:
+            raise ConfigError("GEMINI_API_KEY not found in environment variables")
+
+        genai.configure(api_key=api_key)
+        self.genai = genai
+        self.model_name = model or "gemini-1.5-flash"
         self.temperature = temperature
         self.max_tokens = max_tokens
 
     def chat(
         self,
-        messages: List[Dict[str, str]],
-        stream: bool = False,
-        functions: Optional[List[Dict[str, Any]]] = None,
-        function_call: Optional[str] = None,
+        prompt: str,
+        tools: Optional[list] = None,
         **kwargs
-    ):
+    ) -> str:
         """
         Chat completion with span tracking.
 
         Args:
-            messages: List of message dicts with 'role' and 'content'
-            stream: Whether to stream responses
-            functions: List of function definitions for function calling
-            function_call: Function call mode ('auto', 'none', or function name)
-            **kwargs: Additional OpenAI API parameters
+            prompt: User prompt string
+            tools: Optional list of tool definitions for function calling
+            **kwargs: Additional provider-specific parameters
 
         Returns:
-            Chat completion response or stream
+            Response text as string
         """
         start_time = time.time()
         parent_span_id = get_span_id()
         span_id = generate_span_id()
         set_span_id(span_id, parent_span_id)
         trace_id = get_trace_id()
-        
+
         try:
-            params = {
-                "model": self.model,
-                "messages": messages,
-                "temperature": self.temperature,
-                "stream": stream,
-            }
-
-            if self.max_tokens:
-                params["max_tokens"] = self.max_tokens
-
-            if functions:
-                params["tools"] = functions
-                if function_call:
-                    params["tool_choice"] = function_call
-
-            params.update(kwargs)
-
             # Log LLM call start
             logger.info(
                 "LLM call started",
-                model=self.model,
-                has_functions=bool(functions),
-                stream=stream,
+                provider=self.provider,
+                model=self.model if self.provider == "groq" else self.model_name,
+                has_tools=bool(tools),
             )
 
-            if stream:
-                result = self.client.chat.completions.create(**params)
+            if self.provider == "groq":
+                response_text = self._chat_groq(prompt, tools, **kwargs)
+            elif self.provider == "gemini":
+                response_text = self._chat_gemini(prompt, tools, **kwargs)
             else:
-                result = self.client.chat.completions.create(**params)
-            
+                raise ConfigError(f"Unsupported provider: {self.provider}")
+
             end_time = time.time()
-            
+
             # Log span
             log_span(
                 operation="llm_call",
-                service="openai",
+                service=self.provider,
                 metadata={
-                    "model": self.model,
-                    "has_functions": bool(functions),
-                    "stream": stream,
-                    "messages_count": len(messages),
+                    "model": self.model if self.provider == "groq" else self.model_name,
+                    "has_tools": bool(tools),
+                    "provider": self.provider,
                 },
                 start_time=start_time,
                 end_time=end_time,
             )
-            
-            return result
+
+            return response_text
 
         except Exception as e:
             end_time = time.time()
-            
+
             # Log error span
             log_span(
                 operation="llm_call",
-                service="openai",
+                service=self.provider,
                 metadata={
-                    "model": self.model,
-                    "has_functions": bool(functions),
-                    "stream": stream,
+                    "model": self.model if self.provider == "groq" else self.model_name,
+                    "has_tools": bool(tools),
+                    "provider": self.provider,
                 },
                 start_time=start_time,
                 end_time=end_time,
                 error=str(e),
             )
-            
+
             log_error_with_alert(
-                message=f"LLM call failed: {self.model}",
+                message=f"LLM call failed: {self.provider}",
                 error=e,
                 metadata={
-                    "model": self.model,
-                    "has_functions": bool(functions),
+                    "model": self.model if self.provider == "groq" else self.model_name,
+                    "has_tools": bool(tools),
+                    "provider": self.provider,
                 },
             )
-            
+
             raise LLMError(f"Failed to generate completion: {e}") from e
 
-    async def achat(
+    def _chat_groq(
         self,
-        messages: List[Dict[str, str]],
-        stream: bool = False,
-        functions: Optional[List[Dict[str, Any]]] = None,
-        function_call: Optional[str] = None,
+        prompt: str,
+        tools: Optional[list],
         **kwargs
-    ):
-        """
-        Async chat completion with span tracking.
+    ) -> str:
+        """Execute chat with Groq provider."""
+        messages = [{"role": "user", "content": prompt}]
 
-        Args:
-            messages: List of message dicts with 'role' and 'content'
-            stream: Whether to stream responses
-            functions: List of function definitions for function calling
-            function_call: Function call mode
-            **kwargs: Additional OpenAI API parameters
+        params = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": self.temperature,
+        }
 
-        Returns:
-            Async chat completion response or stream
-        """
-        start_time = time.time()
-        parent_span_id = get_span_id()
-        span_id = generate_span_id()
-        set_span_id(span_id, parent_span_id)
-        trace_id = get_trace_id()
-        
-        try:
-            params = {
-                "model": self.model,
-                "messages": messages,
-                "temperature": self.temperature,
-                "stream": stream,
-            }
+        if self.max_tokens:
+            params["max_tokens"] = self.max_tokens
 
-            if self.max_tokens:
-                params["max_tokens"] = self.max_tokens
+        # Groq uses 'tools' parameter for function calling
+        if tools:
+            params["tools"] = tools
 
-            if functions:
-                params["tools"] = functions
-                if function_call:
-                    params["tool_choice"] = function_call
+        params.update(kwargs)
 
-            params.update(kwargs)
+        response = self.client.chat.completions.create(**params)
+        return response.choices[0].message.content
 
-            # Log LLM call start
-            logger.info(
-                "LLM async call started",
-                model=self.model,
-                has_functions=bool(functions),
-                stream=stream,
-            )
-
-            if stream:
-                result = await self.async_client.chat.completions.create(**params)
-            else:
-                result = await self.async_client.chat.completions.create(**params)
-            
-            end_time = time.time()
-            
-            # Log span
-            log_span(
-                operation="llm_call",
-                service="openai",
-                metadata={
-                    "model": self.model,
-                    "has_functions": bool(functions),
-                    "stream": stream,
-                    "messages_count": len(messages),
-                },
-                start_time=start_time,
-                end_time=end_time,
-            )
-            
-            return result
-
-        except Exception as e:
-            end_time = time.time()
-            
-            # Log error span
-            log_span(
-                operation="llm_call",
-                service="openai",
-                metadata={
-                    "model": self.model,
-                    "has_functions": bool(functions),
-                    "stream": stream,
-                },
-                start_time=start_time,
-                end_time=end_time,
-                error=str(e),
-            )
-            
-            log_error_with_alert(
-                message=f"LLM async call failed: {self.model}",
-                error=e,
-                metadata={
-                    "model": self.model,
-                    "has_functions": bool(functions),
-                },
-            )
-            
-            raise LLMError(f"Failed to generate async completion: {e}") from e
-
-    def stream_chat(
+    def _chat_gemini(
         self,
-        messages: List[Dict[str, str]],
-        functions: Optional[List[Dict[str, Any]]] = None,
+        prompt: str,
+        tools: Optional[list],
         **kwargs
-    ) -> Iterator[str]:
-        """
-        Stream chat completion, yielding text chunks.
+    ) -> str:
+        """Execute chat with Gemini provider."""
+        generation_config = {
+            "temperature": self.temperature,
+        }
 
-        Args:
-            messages: List of message dicts
-            functions: Function definitions
-            **kwargs: Additional parameters
+        if self.max_tokens:
+            generation_config["max_output_tokens"] = self.max_tokens
 
-        Yields:
-            Text chunks from the stream
-        """
-        try:
-            stream = self.chat(messages, stream=True, functions=functions, **kwargs)
-            for chunk in stream:
-                if chunk.choices[0].delta.content:
-                    yield chunk.choices[0].delta.content
-        except Exception as e:
-            logger.error(f"Stream error: {e}")
-            raise LLMError(f"Failed to stream completion: {e}") from e
+        # Merge with kwargs (kwargs take precedence)
+        generation_config.update(kwargs)
 
-    async def astream_chat(
-        self,
-        messages: List[Dict[str, str]],
-        functions: Optional[List[Dict[str, Any]]] = None,
-        **kwargs
-    ) -> AsyncIterator[str]:
-        """
-        Async stream chat completion, yielding text chunks.
+        # Gemini uses function_declarations for tools
+        gemini_tools = None
+        if tools:
+            # Convert tools format to Gemini's function_declarations format
+            function_declarations = []
+            for tool in tools:
+                if isinstance(tool, dict):
+                    func = tool.get("function", {})
+                    func_decl = {
+                        "name": func.get("name", ""),
+                        "description": func.get("description", ""),
+                        "parameters": func.get("parameters", {}),
+                    }
+                    function_declarations.append(func_decl)
+            
+            if function_declarations:
+                gemini_tools = [{"function_declarations": function_declarations}]
 
-        Args:
-            messages: List of message dicts
-            functions: Function definitions
-            **kwargs: Additional parameters
+        # Create model with tools and generation config
+        model = self.genai.GenerativeModel(
+            self.model_name,
+            generation_config=generation_config,
+            tools=gemini_tools,
+        )
 
-        Yields:
-            Text chunks from the stream
-        """
-        try:
-            stream = await self.achat(messages, stream=True, functions=functions, **kwargs)
-            async for chunk in stream:
-                if chunk.choices[0].delta.content:
-                    yield chunk.choices[0].delta.content
-        except Exception as e:
-            logger.error(f"Async stream error: {e}")
-            raise LLMError(f"Failed to async stream completion: {e}") from e
-
+        response = model.generate_content(prompt)
+        return response.text

@@ -10,7 +10,7 @@ pip install -e .
 
 ## Modules
 
-- `llm.py` - OpenAI LLM wrapper with streaming and function calling
+- `llm.py` - Multi-provider LLM wrapper (Groq, Gemini) with function calling support
 - `memory.py` - Redis-based session memory
 - `tools.py` - Tool registry and standardized tool interface
 - `embeddings.py` - Vector store abstraction
