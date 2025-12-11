@@ -19,14 +19,15 @@ class EmailAgent(ToolExecutionAgent):
 
     def get_system_prompt(self) -> str:
         """Get system prompt for email agent."""
-        return """You are an email assistant agent. Your role is to:
-1. Analyze incoming emails
-2. Categorize emails (urgent, important, spam, general)
-3. Determine priority levels
-4. Generate appropriate responses
-5. Suggest actions (reply, forward, archive, delete)
+        # Optimized for Groq: shorter, structured format
+        return """Email agent. Tasks:
+1. Analyze email
+2. Categorize: urgent/important/spam/general
+3. Set priority: high/normal/low
+4. Generate response
+5. Suggest action: reply/forward/archive/delete
 
-Be concise, professional, and helpful."""
+Output JSON: {"category": "...", "priority": "...", "response": "...", "action": "..."}"""
 
     def act(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -42,26 +43,38 @@ Be concise, professional, and helpful."""
         subject = input_data.get("subject", "")
         from_email = input_data.get("from", "")
 
-        query = f"""
-        Email from: {from_email}
-        Subject: {subject}
-        Content: {email}
-
-        Please analyze this email and:
-        1. Categorize it
-        2. Determine priority
-        3. Suggest an action
-        4. Generate a response if needed
-        """
+        # Shorter prompt optimized for Groq
+        query = f"From: {from_email}\nSubject: {subject}\n\n{email}\n\nAnalyze: categorize, priority, action, response."
 
         input_data["query"] = query
         result = super().act(input_data)
 
         # Enhance result with email-specific fields
         response_text = result.get("response", "")
-        result["category"] = self._extract_category(response_text)
-        result["priority"] = self._extract_priority(response_text)
-        result["suggested_action"] = self._extract_action(response_text)
+        
+        # Try to parse JSON from response
+        import json
+        try:
+            json_start = response_text.find("{")
+            json_end = response_text.rfind("}") + 1
+            if json_start >= 0 and json_end > json_start:
+                json_str = response_text[json_start:json_end]
+                parsed = json.loads(json_str)
+                result["category"] = parsed.get("category", self._extract_category(response_text))
+                result["priority"] = parsed.get("priority", self._extract_priority(response_text))
+                result["suggested_action"] = parsed.get("action", self._extract_action(response_text))
+                if "response" in parsed and parsed["response"]:
+                    result["response"] = parsed["response"]
+            else:
+                # Fallback to extraction methods
+                result["category"] = self._extract_category(response_text)
+                result["priority"] = self._extract_priority(response_text)
+                result["suggested_action"] = self._extract_action(response_text)
+        except (json.JSONDecodeError, ValueError, KeyError):
+            # Fallback to extraction methods if JSON parsing fails
+            result["category"] = self._extract_category(response_text)
+            result["priority"] = self._extract_priority(response_text)
+            result["suggested_action"] = self._extract_action(response_text)
 
         return result
 

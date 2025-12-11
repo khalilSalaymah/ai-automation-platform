@@ -23,9 +23,12 @@ class RAGAgent(ToolExecutionAgent):
 
     def get_system_prompt(self) -> str:
         """Get system prompt for RAG agent."""
-        return """You are a helpful assistant that answers questions based on provided context.
-Use the retrieved documents to provide accurate, contextual answers.
-If the context doesn't contain relevant information, say so."""
+        # Optimized for Gemini: clear, structured instructions
+        return """RAG assistant. Answer using provided context.
+- Use context when available
+- Cite sources
+- Say "not in context" if missing
+- Be accurate and concise"""
 
     def act(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """Process query with RAG."""
@@ -53,16 +56,12 @@ If the context doesn't contain relevant information, say so."""
             except Exception as e:
                 logger.error(f"Error in RAG retrieval: {e}")
 
-        # Build prompt with context
+        # Build prompt with context - optimized for Gemini
         if context:
-            enhanced_query = f"""Context from documents:
-{context}
-
-Question: {query}
-
-Please answer the question based on the context provided."""
+            # Shorter, more structured format for Gemini
+            enhanced_query = f"Context:\n{context}\n\nQ: {query}\nA:"
         else:
-            enhanced_query = query
+            enhanced_query = f"Q: {query}\nA:"
 
         input_data["query"] = enhanced_query
         result = super().act(input_data)

@@ -144,6 +144,11 @@ class ToolExecutionAgent(BaseAgent):
                     prompt_parts.append(f"Assistant: {content}")
 
         prompt_parts.append(f"User: {query}")
+        
+        # Add JSON output instruction for structured responses
+        if self.tools and self.tools.get_function_schemas():
+            prompt_parts.append("\nRespond in JSON format: {\"response\": \"text\", \"tools\": [{\"name\": \"tool_name\", \"args\": {}}]}")
+        
         prompt = "\n\n".join(prompt_parts)
 
         # Get function schemas
@@ -151,10 +156,22 @@ class ToolExecutionAgent(BaseAgent):
 
         try:
             text_response = self.llm.chat(prompt, tools=tools)
-
-            # Note: Tool calling response parsing would need to be handled differently
-            # For now, return text response. Tool calling support can be added later
-            # if the provider returns structured tool call information.
+            
+            # Try to parse JSON response for structured outputs
+            import json
+            try:
+                # Look for JSON in response
+                json_start = text_response.find("{")
+                json_end = text_response.rfind("}") + 1
+                if json_start >= 0 and json_end > json_start:
+                    json_str = text_response[json_start:json_end]
+                    parsed = json.loads(json_str)
+                    if "response" in parsed:
+                        text_response = parsed["response"]
+            except (json.JSONDecodeError, ValueError):
+                # If JSON parsing fails, use text response as-is
+                pass
+            
             result = {"response": text_response, "agent": self.name}
 
             if self.memory:
