@@ -68,6 +68,18 @@ from .knowledge_service import KnowledgeBaseService, DocumentChunker
 from .url_crawler import URLCrawler
 from .notion_importer import NotionImporter
 from .knowledge_router import router as knowledge_router
+from .agent_marketplace_models import (
+    Agent,
+    OrganizationAgent,
+    AgentStatus,
+    AgentResponse,
+    OrganizationAgentResponse,
+    AgentConfigUpdate,
+    AgentDeployRequest,
+    AgentEnableRequest,
+)
+from .agent_marketplace_service import AgentMarketplaceService
+from .agent_marketplace_router import router as agent_marketplace_router
 
 __all__ = [
     "LLM",
@@ -164,5 +176,16 @@ __all__ = [
     "URLCrawler",
     "NotionImporter",
     "knowledge_router",
+    # Agent marketplace exports
+    "Agent",
+    "OrganizationAgent",
+    "AgentStatus",
+    "AgentResponse",
+    "OrganizationAgentResponse",
+    "AgentConfigUpdate",
+    "AgentDeployRequest",
+    "AgentEnableRequest",
+    "AgentMarketplaceService",
+    "agent_marketplace_router",
 ]
 
