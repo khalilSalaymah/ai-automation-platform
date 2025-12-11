@@ -12,6 +12,7 @@ from .services.routing import get_routing_service
 from core.log_router import router as log_router
 from core.knowledge_router import router as knowledge_router
 from core.agent_marketplace_router import router as agent_marketplace_router
+from core.branding_router import router as branding_router
 
 load_dotenv()
 
@@ -42,6 +43,7 @@ app.include_router(gateway_router.router)
 app.include_router(log_router)
 app.include_router(knowledge_router)
 app.include_router(agent_marketplace_router, prefix="/api/marketplace", tags=["marketplace"])
+app.include_router(branding_router, prefix="/api", tags=["branding"])
 
 
 @app.on_event("startup")

@@ -2,3 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Default theme variables - can be overridden by branding settings */
+  --color-primary: #3b82f6;
+  --color-secondary: #8b5cf6;
+  --color-accent: #10b981;
+  --color-background: #ffffff;
+  --color-text: #1f2937;
+  --font-family: Inter, sans-serif;
+  --font-size-base: 16px;
+  --border-radius: 8px;
+}
+
+/* Apply theme variables to common elements */
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+}
+
+/* Utility classes using theme variables */
+.btn-primary {
+  background-color: var(--color-primary);
+  border-radius: var(--border-radius);
+}
+
+.btn-secondary {
+  background-color: var(--color-secondary);
+  border-radius: var(--border-radius);
+}
+
+.btn-accent {
+  background-color: var(--color-accent);
+  border-radius: var(--border-radius);
+}
+

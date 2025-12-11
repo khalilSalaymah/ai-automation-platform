@@ -16,6 +16,13 @@ export const AuthProvider = ({ children, apiUrl = 'http://localhost:8000' }) => 
     }
   }, [token])
 
+  // Load branding settings when user is authenticated
+  useEffect(() => {
+    if (user && token) {
+      loadBranding()
+    }
+  }, [user, token])
+
   const fetchUser = async () => {
     try {
       const response = await fetch(`${apiUrl}/api/auth/me`, {
@@ -154,6 +161,52 @@ export const AuthProvider = ({ children, apiUrl = 'http://localhost:8000' }) => 
 
   const googleLogin = () => {
     window.location.href = `${apiUrl}/api/auth/google/login`
+  }
+
+  const loadBranding = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/branding/settings`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Apply theme variables
+        if (data.theme_variables) {
+          const root = document.documentElement
+          if (data.theme_variables.primary_color) {
+            root.style.setProperty('--color-primary', data.theme_variables.primary_color)
+          }
+          if (data.theme_variables.secondary_color) {
+            root.style.setProperty('--color-secondary', data.theme_variables.secondary_color)
+          }
+          if (data.theme_variables.accent_color) {
+            root.style.setProperty('--color-accent', data.theme_variables.accent_color)
+          }
+          if (data.theme_variables.background_color) {
+            root.style.setProperty('--color-background', data.theme_variables.background_color)
+          }
+          if (data.theme_variables.text_color) {
+            root.style.setProperty('--color-text', data.theme_variables.text_color)
+          }
+          if (data.theme_variables.font_family) {
+            root.style.setProperty('--font-family', data.theme_variables.font_family)
+          }
+          if (data.theme_variables.font_size_base) {
+            root.style.setProperty('--font-size-base', data.theme_variables.font_size_base)
+          }
+          if (data.theme_variables.border_radius) {
+            root.style.setProperty('--border-radius', data.theme_variables.border_radius)
+          }
+        }
+      }
+    } catch (error) {
+      // Silently fail - branding is optional
+      console.debug('Could not load branding settings:', error)
+    }
   }
 
   const value = {

@@ -1,8 +1,8 @@
 """Database models for authentication."""
 
 from datetime import datetime
-from typing import Optional
-from sqlmodel import SQLModel, Field, Relationship, Column, String
+from typing import Optional, Dict, Any
+from sqlmodel import SQLModel, Field, Relationship, Column, String, JSON
 from sqlalchemy import DateTime, func
 from enum import Enum as PyEnum
 from .auth import Role
@@ -80,6 +80,10 @@ class Organization(SQLModel, table=True):
     id: Optional[str] = Field(default=None, primary_key=True)
     name: str
     slug: str = Field(unique=True, index=True)
+    # White-label branding fields
+    logo_url: Optional[str] = None
+    custom_domain: Optional[str] = Field(default=None, unique=True, index=True)
+    theme_variables: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSON))
     created_at: datetime = Field(
         default_factory=datetime.utcnow, sa_column=Column(DateTime, server_default=func.now())
     )

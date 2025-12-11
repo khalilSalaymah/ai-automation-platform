@@ -80,6 +80,7 @@ from .agent_marketplace_models import (
 )
 from .agent_marketplace_service import AgentMarketplaceService
 from .agent_marketplace_router import router as agent_marketplace_router
+from .branding_router import router as branding_router
 
 __all__ = [
     "LLM",
@@ -187,5 +188,6 @@ __all__ = [
     "AgentEnableRequest",
     "AgentMarketplaceService",
     "agent_marketplace_router",
+    "branding_router",
 ]
 
