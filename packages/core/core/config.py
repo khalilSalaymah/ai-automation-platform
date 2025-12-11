@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     stripe_price_pro: str = ""  # Stripe Price ID for pro plan
     stripe_price_enterprise: str = ""  # Stripe Price ID for enterprise plan
 
+    # Notion
+    notion_api_key: str = ""  # Notion API key for importing pages
+
     class Config:
         env_file = ".env"
         case_sensitive = False

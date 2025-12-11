@@ -10,6 +10,7 @@ from .routers import gateway_router
 from .middleware import rate_limit, quota, logging
 from .services.routing import get_routing_service
 from core.log_router import router as log_router
+from core.knowledge_router import router as knowledge_router
 
 load_dotenv()
 
@@ -38,6 +39,7 @@ app.middleware("http")(quota.check_quota_middleware)
 # Include routers
 app.include_router(gateway_router.router)
 app.include_router(log_router)
+app.include_router(knowledge_router)
 
 
 @app.on_event("startup")

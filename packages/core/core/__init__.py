@@ -51,6 +51,23 @@ from .worker import create_worker
 from .log_models import LogEntry, LogEntryResponse, LogQueryParams
 from .log_router import router as log_router
 from .observability import send_slack_alert, log_error_with_alert
+from .knowledge_models import (
+    Document,
+    DocumentChunk,
+    AgentDocument,
+    DocumentSource,
+    DocumentStatus,
+    DocumentCreate,
+    DocumentResponse,
+    DocumentSearchRequest,
+    DocumentSearchResult,
+    AgentDocumentLink,
+    AgentDocumentResponse,
+)
+from .knowledge_service import KnowledgeBaseService, DocumentChunker
+from .url_crawler import URLCrawler
+from .notion_importer import NotionImporter
+from .knowledge_router import router as knowledge_router
 
 __all__ = [
     "LLM",
@@ -130,5 +147,22 @@ __all__ = [
     # Observability exports
     "send_slack_alert",
     "log_error_with_alert",
+    # Knowledge base exports
+    "Document",
+    "DocumentChunk",
+    "AgentDocument",
+    "DocumentSource",
+    "DocumentStatus",
+    "DocumentCreate",
+    "DocumentResponse",
+    "DocumentSearchRequest",
+    "DocumentSearchResult",
+    "AgentDocumentLink",
+    "AgentDocumentResponse",
+    "KnowledgeBaseService",
+    "DocumentChunker",
+    "URLCrawler",
+    "NotionImporter",
+    "knowledge_router",
 ]
 
