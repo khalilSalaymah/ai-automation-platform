@@ -7,9 +7,10 @@ from typing import Optional
 class Settings(BaseSettings):
     """Application settings."""
 
-    # OpenAI
-    openai_api_key: str
-    openai_model: str = "gpt-4"
+    # LLM provider is detected from LLM_PROVIDER env var (groq or gemini)
+    # For RAG chat: set LLM_PROVIDER=gemini and GEMINI_API_KEY
+    # OpenAI API key is still needed for embeddings (EmbeddingGenerator)
+    openai_api_key: Optional[str] = None
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"

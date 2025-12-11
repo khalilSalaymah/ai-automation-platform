@@ -78,18 +78,25 @@ class PlannerAgent(BaseAgent):
         task = input_data.get("task") or input_data.get("query", "")
         session_id = input_data.get("session_id", "default")
 
-        # Build messages
-        messages = [{"role": "system", "content": self.get_system_prompt()}]
+        # Build prompt with system message and history
+        system_prompt = self.get_system_prompt()
+        prompt_parts = [system_prompt]
 
         if self.memory:
             history = self.memory.get_messages(session_id)
-            messages.extend(history)
+            for msg in history:
+                role = msg.get("role", "user")
+                content = msg.get("content", "")
+                if role == "user":
+                    prompt_parts.append(f"User: {content}")
+                elif role == "assistant":
+                    prompt_parts.append(f"Assistant: {content}")
 
-        messages.append({"role": "user", "content": f"Plan steps to: {task}"})
+        prompt_parts.append(f"User: Plan steps to: {task}")
+        prompt = "\n\n".join(prompt_parts)
 
         try:
-            response = self.llm.chat(messages)
-            plan_text = response.choices[0].message.content
+            plan_text = self.llm.chat(prompt)
 
             # Parse plan (simple extraction - can be enhanced)
             steps = [s.strip() for s in plan_text.split("\n") if s.strip()]
@@ -122,44 +129,32 @@ class ToolExecutionAgent(BaseAgent):
         query = input_data.get("query") or input_data.get("action", "")
         session_id = input_data.get("session_id", "default")
 
-        # Build messages
-        messages = [{"role": "system", "content": self.get_system_prompt()}]
+        # Build prompt with system message and history
+        system_prompt = self.get_system_prompt()
+        prompt_parts = [system_prompt]
 
         if self.memory:
             history = self.memory.get_messages(session_id)
-            messages.extend(history)
+            for msg in history:
+                role = msg.get("role", "user")
+                content = msg.get("content", "")
+                if role == "user":
+                    prompt_parts.append(f"User: {content}")
+                elif role == "assistant":
+                    prompt_parts.append(f"Assistant: {content}")
 
-        messages.append({"role": "user", "content": query})
+        prompt_parts.append(f"User: {query}")
+        prompt = "\n\n".join(prompt_parts)
 
         # Get function schemas
-        functions = self.tools.get_function_schemas() if self.tools else None
+        tools = self.tools.get_function_schemas() if self.tools else None
 
         try:
-            response = self.llm.chat(messages, functions=functions)
+            text_response = self.llm.chat(prompt, tools=tools)
 
-            message = response.choices[0].message
-
-            # Check for function calls
-            if hasattr(message, "tool_calls") and message.tool_calls:
-                results = []
-                for tool_call in message.tool_calls:
-                    tool_name = tool_call.function.name
-                    tool_inputs = eval(tool_call.function.arguments)  # Parse JSON string
-
-                    if self.tools:
-                        tool_result = self.tools.execute(tool_name, tool_inputs)
-                        results.append(
-                            {
-                                "tool": tool_name,
-                                "inputs": tool_inputs,
-                                "result": tool_result,
-                            }
-                        )
-
-                return {"results": results, "agent": self.name}
-
-            # No function calls, return text response
-            text_response = message.content
+            # Note: Tool calling response parsing would need to be handled differently
+            # For now, return text response. Tool calling support can be added later
+            # if the provider returns structured tool call information.
             result = {"response": text_response, "agent": self.name}
 
             if self.memory:

@@ -17,10 +17,9 @@ class EmailService:
 
     def __init__(self):
         """Initialize email service."""
-        self.llm = LLM(
-            api_key=settings.openai_api_key,
-            model=settings.openai_model,
-        )
+        # LLM will auto-detect provider from LLM_PROVIDER env var
+        # For Groq apps, set LLM_PROVIDER=groq and GROQ_API_KEY
+        self.llm = LLM(model="llama3-8b-8192")
         self.memory = RedisSessionMemory(url=settings.redis_url)
         self.agent = EmailAgent(
             name="email-agent",

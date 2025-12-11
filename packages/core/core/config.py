@@ -26,9 +26,9 @@ def get_env(key: str, default: Optional[str] = None) -> Optional[str]:
 class Settings(BaseSettings):
     """Application settings."""
 
-    # OpenAI
+    # OpenAI (only used for embeddings, not text generation)
+    # Text generation uses LLM_PROVIDER (groq/gemini) from environment
     openai_api_key: str = ""
-    openai_model: str = "gpt-4"
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"
