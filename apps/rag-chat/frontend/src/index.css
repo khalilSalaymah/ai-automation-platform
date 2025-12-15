@@ -2,3 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Smooth theme transitions */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-gray-50 text-slate-900 dark:bg-bg-dark dark:text-slate-100 transition-colors duration-300;
+}
+
+/* Chat-specific animations */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}

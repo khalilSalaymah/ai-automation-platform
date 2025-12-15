@@ -4,7 +4,7 @@ import { AuthProvider, Login, Register, ForgotPassword, AuthGuard } from '@ui/co
 import Chat from './pages/Chat'
 import AuthCallback from './pages/AuthCallback'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8082'
 
 function App() {
   return (
