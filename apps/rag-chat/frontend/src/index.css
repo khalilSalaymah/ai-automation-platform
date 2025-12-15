@@ -7,8 +7,21 @@ html {
   scroll-behavior: smooth;
 }
 
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
 body {
-  @apply bg-gray-50 text-slate-900 dark:bg-bg-dark dark:text-slate-100 transition-colors duration-300;
+  @apply bg-white text-slate-900 dark:bg-bg-dark dark:text-slate-100 transition-colors duration-300;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
 }
 
 /* Chat-specific animations */

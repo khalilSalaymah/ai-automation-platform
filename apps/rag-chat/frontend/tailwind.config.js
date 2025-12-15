@@ -16,8 +16,9 @@ export default {
         primary: '#3b82f6',
         secondary: '#8b5cf6',
         accent: '#10b981',
-        'bg-dark': '#020617', // slate-950
-        'surface-dark': '#020617',
+        'bg-dark': '#000000', // Pure black
+        'surface-dark': '#0a0a0a', // Very dark gray
+        'border-dark': '#1a1a1a', // Dark border
       },
       boxShadow: {
         'soft-xl': '0 25px 50px -12px rgba(15,23,42,0.35)',
