@@ -68,10 +68,10 @@ def require_role(allowed_roles: list[Role]):
     return role_checker
 
 
-# Common role dependencies
-RequireAdmin = Depends(require_role([Role.ADMIN]))
-RequireStaff = Depends(require_role([Role.ADMIN, Role.STAFF]))
-RequireClient = Depends(require_role([Role.ADMIN, Role.STAFF, Role.CLIENT]))
+# Common role dependency factories (used with Depends(...) in routes)
+RequireAdmin = require_role([Role.ADMIN])
+RequireStaff = require_role([Role.ADMIN, Role.STAFF])
+RequireClient = require_role([Role.ADMIN, Role.STAFF, Role.CLIENT])
 
 
 async def get_user_org_id(current_user: User = Depends(get_current_active_user)) -> Optional[str]:

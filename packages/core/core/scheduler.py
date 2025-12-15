@@ -102,17 +102,26 @@ class TaskScheduler:
                     for key, value in task.model_dump(exclude={"id", "created_at"}).items():
                         setattr(existing, key, value)
                     existing.updated_at = datetime.utcnow()
-                    task = existing
+                    session.commit()
+                    # Use a plain dict so we don't keep a session-bound instance
+                    task_data = existing.model_dump()
                 else:
                     session.add(task)
-                session.commit()
+                    session.commit()
+                    session.refresh(task)
+                    task_data = task.model_dump()
+
+            # Work with a detached instance (not bound to a DB session) to avoid
+            # DetachedInstanceError during scheduling.
+            detached_task = ScheduledTask(**task_data)
 
             # Schedule the task
-            self._schedule_task(task)
-            logger.info(f"Registered task {task.task_name} for agent {task.agent_name}")
+            self._schedule_task(detached_task)
+            logger.info(f"Registered task {detached_task.task_name} for agent {detached_task.agent_name}")
             return True
         except Exception as e:
-            logger.error(f"Error registering task {task.task_name}: {e}")
+            task_name = getattr(task, "task_name", getattr(task, "id", "unknown"))
+            logger.error(f"Error registering task {task_name}: {e}")
             return False
 
     def _schedule_task(self, task: ScheduledTask) -> None:
@@ -211,7 +220,8 @@ class TaskScheduler:
                     logger.error(f"Invalid interval format: {task.schedule}")
 
         except Exception as e:
-            logger.error(f"Error scheduling task {task.task_name}: {e}")
+            task_name = getattr(task, "task_name", getattr(task, "id", "unknown"))
+            logger.error(f"Error scheduling task {task_name}: {e}")
 
     def _import_function(self, function_path: str) -> Callable:
         """

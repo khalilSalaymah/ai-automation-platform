@@ -23,11 +23,18 @@ export const AuthProvider = ({ children, apiUrl = 'http://localhost:8000' }) => 
     }
   }, [user, token])
 
-  const fetchUser = async () => {
+  const fetchUser = async (tokenToUse = null) => {
     try {
+      // Use provided token or fall back to state token
+      const authToken = tokenToUse || token
+      if (!authToken) {
+        setLoading(false)
+        return
+      }
+
       const response = await fetch(`${apiUrl}/api/auth/me`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${authToken}`,
         },
       })
 
@@ -66,7 +73,8 @@ export const AuthProvider = ({ children, apiUrl = 'http://localhost:8000' }) => 
         setRefreshToken(data.refresh_token)
         localStorage.setItem('access_token', data.access_token)
         localStorage.setItem('refresh_token', data.refresh_token)
-        await fetchUser()
+        // Pass the new token directly to avoid race condition with state update
+        await fetchUser(data.access_token)
       } else {
         logout()
       }
@@ -92,7 +100,8 @@ export const AuthProvider = ({ children, apiUrl = 'http://localhost:8000' }) => 
         setRefreshToken(data.refresh_token)
         localStorage.setItem('access_token', data.access_token)
         localStorage.setItem('refresh_token', data.refresh_token)
-        await fetchUser()
+        // Pass the new token directly to avoid race condition with state update
+        await fetchUser(data.access_token)
         return { success: true }
       } else {
         const error = await response.json()

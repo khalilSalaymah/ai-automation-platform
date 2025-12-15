@@ -84,7 +84,8 @@ class Usage(SQLModel, table=True):
     subscription_id: Optional[str] = Field(default=None, foreign_key="subscriptions.id", index=True)
     usage_type: UsageType
     quantity: int = Field(default=0)
-    metadata: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    # "metadata" is reserved by SQLAlchemy declarative; use a different attribute name and map it via sa_column
+    extra_metadata: Optional[dict] = Field(default=None, sa_column=Column("metadata", JSON))
     period_start: datetime = Field(index=True)
     period_end: datetime = Field(index=True)
     created_at: datetime = Field(

@@ -8,7 +8,9 @@ from pydantic import BaseModel, EmailStr
 from enum import Enum
 
 # Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Use pbkdf2_sha256 to avoid bcrypt backend/version issues and the 72-byte
+# password limit while still providing a strong, salted hash.
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 # JWT settings
 ALGORITHM = "HS256"

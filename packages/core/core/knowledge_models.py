@@ -42,7 +42,8 @@ class Document(SQLModel, table=True):
     error_message: Optional[str] = None
     org_id: Optional[str] = Field(default=None, index=True)  # Multi-tenant support
     user_id: Optional[str] = Field(default=None, index=True)  # Creator
-    metadata: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    # Additional metadata for the document (stored as JSON)
+    extra_metadata: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     created_at: datetime = Field(
         default_factory=datetime.utcnow, sa_column=Column(DateTime, server_default=func.now())
     )
@@ -62,7 +63,8 @@ class DocumentChunk(SQLModel, table=True):
     chunk_index: int  # Order within document
     content: str = Field(sa_column=Column(Text))
     vector_id: Optional[str] = None  # ID in vector store
-    metadata: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    # Additional metadata for the chunk (stored as JSON)
+    extra_metadata: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     created_at: datetime = Field(
         default_factory=datetime.utcnow, sa_column=Column(DateTime, server_default=func.now())
     )

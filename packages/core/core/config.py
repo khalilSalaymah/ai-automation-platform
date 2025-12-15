@@ -26,6 +26,18 @@ def get_env(key: str, default: Optional[str] = None) -> Optional[str]:
 class Settings(BaseSettings):
     """Application settings."""
 
+    # LLM provider configuration
+    # Text generation provider can be selected via environment (e.g. "groq", "gemini")
+    llm_provider: str = ""
+    gemini_api_key: str = ""
+
+    # App metadata
+    app_name: str = ""
+    app_env: str = "development"
+
+    # Vector store selection (e.g. "pgvector", "pinecone")
+    vector_store: str = "pgvector"
+
     # OpenAI (only used for embeddings, not text generation)
     # Text generation uses LLM_PROVIDER (groq/gemini) from environment
     openai_api_key: str = ""
@@ -88,6 +100,8 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        # Ignore any extra environment variables not explicitly defined above
+        extra = "ignore"
 
 
 def get_settings() -> Settings:
