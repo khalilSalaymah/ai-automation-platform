@@ -21,11 +21,13 @@ class ChatRequestModel(BaseModel):
 async def chat(request: ChatRequestModel):
     """Chat with RAG."""
     try:
+        logger.info(f"Chat request: message='{request.message[:100]}...', session_id={request.session_id}")
         service = RAGService()
         result = await service.chat(request.message, request.session_id)
+        logger.info(f"Chat response generated: {len(result.response)} chars, {len(result.sources)} sources")
         return result
     except Exception as e:
-        logger.error(f"Error in chat: {e}")
+        logger.error(f"Error in chat: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -33,12 +35,15 @@ async def chat(request: ChatRequestModel):
 async def upload_document(file: UploadFile = File(...)):
     """Upload document for indexing."""
     try:
+        logger.info(f"Received document upload request: {file.filename}")
         service = RAGService()
         content = await file.read()
+        logger.info(f"Read {len(content)} bytes from uploaded file")
         doc_id = await service.index_document(file.filename, content)
+        logger.info(f"Successfully indexed document {file.filename} with ID: {doc_id}")
         return {"document_id": doc_id, "filename": file.filename}
     except Exception as e:
-        logger.error(f"Error uploading document: {e}")
+        logger.error(f"Error uploading document {file.filename}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -46,10 +51,12 @@ async def upload_document(file: UploadFile = File(...)):
 async def list_documents():
     """List indexed documents."""
     try:
+        logger.info("Received request to list documents")
         service = RAGService()
         documents = await service.list_documents()
+        logger.info(f"Returning {len(documents)} documents")
         return documents
     except Exception as e:
-        logger.error(f"Error listing documents: {e}")
+        logger.error(f"Error listing documents: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
