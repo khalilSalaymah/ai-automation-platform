@@ -7,9 +7,10 @@ from typing import Optional
 class Settings(BaseSettings):
     """Application settings."""
 
-    # LLM provider is detected from LLM_PROVIDER env var (groq or gemini)
+    # LLM provider configuration
     # For RAG chat: set LLM_PROVIDER=gemini and GEMINI_API_KEY
-    # GEMINI_API_KEY is used for both LLM and embeddings
+    llm_provider: str = ""
+    gemini_api_key: str = ""
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"
@@ -25,6 +26,7 @@ class Settings(BaseSettings):
     # Application
     app_name: str = "rag-chat"
     app_env: str = "development"
+    secret_key: str = "your-secret-key-change-in-production"
     log_level: str = "INFO"
 
     # Vector Store
@@ -33,6 +35,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"
 
 
 settings = Settings()

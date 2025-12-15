@@ -35,8 +35,10 @@ services:
 
   rag-chat:
     build:
-      context: ../apps/rag-chat
-      dockerfile: ../../infra/docker/python.Dockerfile
+      context: ..
+      dockerfile: infra/docker/python.Dockerfile
+      args:
+        APP_NAME: rag-chat
     env_file:
       - ../apps/rag-chat/.env
     depends_on:
@@ -44,8 +46,13 @@ services:
       - pgvector
     ports:
       - "8082:8000"
+    # Mount both the rag-chat app and shared core package so code changes are
+    # reflected immediately inside the container during development.
     volumes:
       - ../apps/rag-chat:/app
+      - ../packages/core:/packages/core
+    # Run a reload-enabled dev server so code changes auto-reload without rebuilds.
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   support-bot:
     build:

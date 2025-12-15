@@ -3,7 +3,7 @@
 from .llm import LLM
 from .memory import RedisSessionMemory
 from .tools import Tool, ToolRegistry
-from .embeddings import EmbeddingsStore
+from .embeddings import EmbeddingsStore, EmbeddingGenerator
 from .agents import BaseAgent, PlannerAgent, ToolExecutionAgent, AgentOrchestrator
 from .logger import logger
 from .config import get_env, Settings
@@ -88,6 +88,7 @@ __all__ = [
     "Tool",
     "ToolRegistry",
     "EmbeddingsStore",
+    "EmbeddingGenerator",
     "BaseAgent",
     "PlannerAgent",
     "ToolExecutionAgent",

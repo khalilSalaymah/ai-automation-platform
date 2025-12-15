@@ -47,11 +47,12 @@ def serialize_log(record: Dict[str, Any]) -> str:
                 log_data[key] = value
     
     # Add exception info if present
-    if "exception" in record:
+    exc = record.get("exception")
+    if exc is not None:
         log_data["exception"] = {
-            "type": record["exception"].type.__name__ if record["exception"].type else None,
-            "value": str(record["exception"].value) if record["exception"].value else None,
-            "traceback": record["exception"].traceback if record["exception"].traceback else None,
+            "type": exc.type.__name__ if getattr(exc, "type", None) else None,
+            "value": str(getattr(exc, "value", None)) if getattr(exc, "value", None) else None,
+            "traceback": getattr(exc, "traceback", None) if getattr(exc, "traceback", None) else None,
         }
     
     return json.dumps(log_data, default=str)

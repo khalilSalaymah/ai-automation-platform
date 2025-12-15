@@ -3,8 +3,8 @@
 import uuid
 from typing import Optional, Dict, Any, Callable
 from datetime import datetime
-from rq import Queue, Job
-from rq.job import JobStatus
+from rq import Queue
+from rq.job import Job, JobStatus
 import redis
 from .logger import logger
 from .config import get_settings

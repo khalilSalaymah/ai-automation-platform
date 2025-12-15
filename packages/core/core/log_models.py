@@ -38,8 +38,9 @@ class LogEntry(SQLModel, table=True):
     operation: Optional[str] = None  # llm_call, tool_execution, http_request
     service: Optional[str] = None  # openai, tool_registry, gateway
     
-    # Additional metadata (stored as JSON)
-    metadata: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSON))
+    # Additional metadata (stored as JSON). "metadata" is reserved by SQLAlchemy's Declarative API,
+    # so we use a different attribute name and map it to the "metadata" column.
+    extra_metadata: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column("metadata", JSON))
     
     # Error information
     error_type: Optional[str] = None

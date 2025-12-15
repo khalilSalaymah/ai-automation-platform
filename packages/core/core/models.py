@@ -11,7 +11,8 @@ from .auth import Role
 class UserBase(SQLModel):
     """Base user model."""
 
-    email: str = Field(unique=True, index=True, sa_column=Column(String, unique=True, index=True))
+    # Define uniqueness and indexing via the underlying SQLAlchemy Column, not via Field params
+    email: str = Field(sa_column=Column(String, unique=True, index=True))
     full_name: Optional[str] = None
     is_active: bool = True
     is_verified: bool = False
