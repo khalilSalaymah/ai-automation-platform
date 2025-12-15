@@ -75,7 +75,11 @@ class LLM:
             raise ConfigError("GROQ_API_KEY not found in environment variables")
 
         self.client = Groq(api_key=api_key)
-        self.model = model or "llama3-8b-8192"
+        # Allow overriding the Groq model via environment to avoid breakage
+        # when models are deprecated by the provider.
+        # If GROQ_MODEL is not set, fall back to a reasonable default.
+        env_model = get_env("GROQ_MODEL")
+        self.model = model or env_model or "llama-3.1-8b-instant"
         self.temperature = temperature
         self.max_tokens = max_tokens
 
@@ -103,7 +107,10 @@ class LLM:
 
         genai.configure(api_key=api_key)
         self.genai = genai
-        self.model_name = model or "gemini-1.5-flash"
+        # Use a broadly available default model for the current Gemini API.
+        # If a specific model is needed, it can be passed explicitly when
+        # constructing LLM or via a higher-level service.
+        self.model_name = model or "gemini-pro"
         self.temperature = temperature
         self.max_tokens = max_tokens
 

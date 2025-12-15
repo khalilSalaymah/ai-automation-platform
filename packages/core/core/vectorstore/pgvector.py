@@ -45,32 +45,72 @@ class PGVectorStore(EmbeddingsStore):
             # Enable pgvector extension
             cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
 
-            # Create table
-            cur.execute(
-                f"""
-                CREATE TABLE IF NOT EXISTS {self.table_name} (
-                    id SERIAL PRIMARY KEY,
-                    vector_id VARCHAR(255) UNIQUE NOT NULL,
-                    embedding vector(1536),
-                    metadata JSONB,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            # Check if table exists and what dimension it has
+            cur.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = %s
                 )
-                """
-            )
+            """, (self.table_name,))
+            table_exists = cur.fetchone()[0]
 
-            # Create index for similarity search
-            cur.execute(
-                f"""
-                CREATE INDEX IF NOT EXISTS {self.table_name}_embedding_idx
-                ON {self.table_name}
-                USING ivfflat (embedding vector_cosine_ops)
-                """
-            )
+            if table_exists:
+                # Check the current embedding dimension
+                try:
+                    cur.execute(f"""
+                        SELECT pg_catalog.format_type(a.atttypid, a.atttypmod) 
+                        FROM pg_attribute a
+                        JOIN pg_class c ON a.attrelid = c.oid
+                        WHERE c.relname = %s AND a.attname = 'embedding'
+                    """, (self.table_name,))
+                    result = cur.fetchone()
+                    if result:
+                        type_str = result[0]
+                        # Extract dimension from type like "vector(768)" or "vector(1536)"
+                        import re
+                        match = re.search(r'vector\((\d+)\)', type_str)
+                        if match:
+                            current_dim = int(match.group(1))
+                            if current_dim != 768:
+                                logger.warning(
+                                    f"Table {self.table_name} has dimension {current_dim}, "
+                                    f"expected 768. Dropping and recreating..."
+                                )
+                                cur.execute(f"DROP TABLE {self.table_name}")
+                                table_exists = False
+                except Exception as e:
+                    logger.warning(f"Could not check table dimension: {e}, recreating table")
+                    cur.execute(f"DROP TABLE IF EXISTS {self.table_name}")
+                    table_exists = False
+
+            if not table_exists:
+                cur.execute(
+                    f"""
+                    CREATE TABLE {self.table_name} (
+                        id SERIAL PRIMARY KEY,
+                        vector_id VARCHAR(255) UNIQUE NOT NULL,
+                        embedding vector(768),
+                        metadata JSONB,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+                )
+
+                # Create index for similarity search
+                cur.execute(
+                    f"""
+                    CREATE INDEX IF NOT EXISTS {self.table_name}_embedding_idx
+                    ON {self.table_name}
+                    USING ivfflat (embedding vector_cosine_ops)
+                    """
+                )
+                logger.info(f"Created table {self.table_name} with 768-dim embeddings")
+            else:
+                logger.info(f"Table {self.table_name} already exists with correct dimension")
 
             conn.commit()
             cur.close()
             conn.close()
-            logger.info(f"Ensured table {self.table_name} exists")
         except Exception as e:
             logger.error(f"Failed to ensure table: {e}")
             raise VectorStoreError(f"Table creation failed: {e}") from e
