@@ -56,8 +56,10 @@ services:
 
   support-bot:
     build:
-      context: ../apps/support-bot
-      dockerfile: ../../infra/docker/python.Dockerfile
+      context: ..
+      dockerfile: infra/docker/python.Dockerfile
+      args:
+        APP_NAME: support-bot
     env_file:
       - ../apps/support-bot/.env
     depends_on:
@@ -65,8 +67,13 @@ services:
       - pgvector
     ports:
       - "8083:8000"
+    # Mount both the support-bot app and shared core package so code changes are
+    # reflected immediately inside the container during development.
     volumes:
       - ../apps/support-bot:/app
+      - ../packages/core:/packages/core
+    # Run a reload-enabled dev server so code changes auto-reload without rebuilds.
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   scraper-agent:
     build:

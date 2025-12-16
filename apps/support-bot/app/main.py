@@ -29,7 +29,12 @@ app.include_router(auth_router, prefix="/api")
 app.include_router(scheduler_router, prefix="/api/scheduler", tags=["scheduler"])
 
 # Include app routers
-app.include_router(support_router, prefix="/api/support", tags=["support"])
+# Expose support-bot APIs under /api to match other apps and keep
+# the external contract simple:
+# - POST /api/chat
+# - POST /api/tickets
+# - GET  /api/tickets/{ticket_id}
+app.include_router(support_router, prefix="/api", tags=["support"])
 
 
 @app.on_event("startup")

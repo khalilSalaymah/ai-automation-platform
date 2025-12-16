@@ -4,7 +4,7 @@ import { AuthProvider, Login, Register, ForgotPassword, AuthGuard, AdminGuard } 
 import Support from './pages/Support'
 import AuthCallback from './pages/AuthCallback'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8083'
 
 function App() {
   return (
