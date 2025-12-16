@@ -1,4 +1,4 @@
-import { colors, shadows, animations } from '../../../packages/ui/src/theme'
+import { colors, shadows, animations } from './packages/ui/src/theme'
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -6,8 +6,7 @@ export default {
   content: [
     './index.html',
     './src/**/*.{js,ts,jsx,tsx}',
-    // Include shared UI package so Tailwind sees its classes
-    '../../../packages/ui/src/**/*.{js,ts,jsx,tsx}',
+    './packages/ui/src/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
@@ -35,3 +34,5 @@ export default {
   },
   plugins: [],
 }
+
+
